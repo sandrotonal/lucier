@@ -5,7 +5,9 @@ import Navbar from '../components/Navbar'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import SizeGuide from '../components/SizeGuide'
-import { getProductById, getRelatedProducts } from '../data/products'
+import { getProductById } from '../data/products'
+import { catalogService } from '../services/catalog'
+import { useTrackProductView } from '../hooks/useRecentlyViewed'
 import { useStore } from '../store/StoreContext'
 
 export default function ProductDetail() {
@@ -13,6 +15,8 @@ export default function ProductDetail() {
   const { pathname } = useLocation()
   const productId = pathname === '/jacket' ? 2 : Number(id)
   const product = getProductById(productId)
+
+  useTrackProductView(product?.id)
 
   const [selectedSize, setSelectedSize] = useState('')
   const [activeImage, setActiveImage] = useState(0)
@@ -27,9 +31,13 @@ export default function ProductDetail() {
   const unavailable = new Set(product.unavailableSizes ?? [])
   const currentSize = selectedSize || sizes.find((s) => !unavailable.has(s)) || ''
   const liked = isInWishlist(product.id)
-  const related = getRelatedProducts(product.id)
+  const related = catalogService.getRelated(product.id)
 
   const handleAddToBag = () => {
+    if (product.stock === 0) {
+      showToast('This item is out of stock', 'error')
+      return
+    }
     if (sizes.length > 0 && !currentSize) {
       showToast('Please select a size', 'error')
       return
@@ -160,6 +168,12 @@ export default function ProductDetail() {
                 </button>
               </div>
               <p className="font-headline-md text-[20px] md:text-headline-md text-primary">{product.priceLabel}</p>
+              {product.stock <= 3 && product.stock > 0 && (
+                <p className="font-label-caps text-[10px] text-secondary uppercase mt-2">Only {product.stock} left</p>
+              )}
+              {product.stock === 0 && (
+                <p className="font-label-caps text-[10px] text-error uppercase mt-2">Out of stock</p>
+              )}
             </div>
 
             <div className="w-full h-px bg-primary mb-8 md:mb-12" />
@@ -275,6 +289,17 @@ export default function ProductDetail() {
           </div>
         </div>
       </motion.section>
+
+      {/* Sticky add-to-bag — mobile (rakip UX: SSENSE, Mr Porter) */}
+      <div className="lg:hidden fixed bottom-[max(5rem,calc(5rem+env(safe-area-inset-bottom)))] left-0 right-0 z-40 px-container-margin">
+        <button
+          onClick={handleAddToBag}
+          className="w-full flex items-center justify-between border border-primary bg-primary text-on-primary px-5 py-3 font-label-caps text-label-caps uppercase tracking-widest shadow-2xl"
+        >
+          <span>Add to Bag — {product.priceLabel}</span>
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
 
       <MobileNav />
       <Footer />

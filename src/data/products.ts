@@ -17,6 +17,7 @@ export interface Product {
   featured?: boolean
   sizes?: string[]
   unavailableSizes?: string[]
+  stock: number
 }
 
 export const CATEGORIES = ['All', 'Jackets', 'Accessories', 'Shoes', 'Tops'] as const
@@ -36,6 +37,7 @@ export const products: Product[] = [
     aspect: 'aspect-[4/3]',
     col: 'md:col-span-8',
     featured: true,
+    stock: 8,
   },
   {
     id: 2,
@@ -57,6 +59,7 @@ export const products: Product[] = [
     featured: true,
     sizes: ['S', 'M', 'L', 'XL'],
     unavailableSizes: ['XL'],
+    stock: 12,
   },
   {
     id: 3,
@@ -71,6 +74,7 @@ export const products: Product[] = [
     aspect: 'aspect-square',
     col: 'md:col-span-4',
     featured: true,
+    stock: 15,
   },
   {
     id: 4,
@@ -87,6 +91,7 @@ export const products: Product[] = [
     offset: 'md:mt-12',
     featured: true,
     sizes: ['XS', 'S', 'M', 'L'],
+    stock: 20,
   },
   {
     id: 5,
@@ -100,6 +105,7 @@ export const products: Product[] = [
     img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtc_QJzMTgCYQgXfGGaMv02P2alv2y_-t1DHQjwEeIaq6rp_lcr9Jsb4TLrT2bzDnqD9RX7-_F3kxZy20Lbg5K4-QYk6Ai8n1nRa1tlhARL9YBMF3Dvi7yzb_4Jz89d8KZ6aq5cLNSsCe6dInANJT_LFnpnDomqnHVeyvV0IaqEmVOIgvdqdPxvmcZN4PKUOUcI7A4EzadGO6ocFSq_0o4AwEDp1yIFAndZeKOOE18dxyHK4Rd19S3qSN3vLDs7KTn40W_XFnTWLc',
     aspect: 'aspect-square',
     sizes: ['40', '41', '42', '43', '44'],
+    stock: 6,
   },
 ]
 
@@ -132,6 +138,10 @@ export function getRelatedProducts(id: number, limit = 4): Product[] {
   return products.filter((p) => p.id !== id && p.category !== current.category)
     .concat(products.filter((p) => p.id !== id && p.category === current.category))
     .slice(0, limit)
+}
+
+export function getStock(productId: number): number {
+  return getProductById(productId)?.stock ?? 0
 }
 
 export function formatPrice(amount: number): string {

@@ -19,9 +19,9 @@ export default function HeroNav() {
           New collection
         </Link>
         <div className="w-px h-4 bg-on-tertiary/30 flex-shrink-0" />
-        <a href="#" className="text-on-tertiary hover:text-white transition-colors font-label-caps text-label-caps whitespace-nowrap">
+        <Link to="/info/about" className="text-on-tertiary hover:text-white transition-colors font-label-caps text-label-caps whitespace-nowrap">
           About
-        </a>
+        </Link>
       </div>
     </div>
   )

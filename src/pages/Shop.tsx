@@ -5,11 +5,20 @@ import Navbar from '../components/Navbar'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
-import { CATEGORIES, filterProducts, type CategoryFilter } from '../data/products'
+import { CATEGORIES, type CategoryFilter } from '../data/products'
+import { catalogService, type SortOption } from '../services/catalog'
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'featured', label: 'Featured' },
+  { value: 'price-asc', label: 'Price ↑' },
+  { value: 'price-desc', label: 'Price ↓' },
+  { value: 'name', label: 'Name' },
+]
 
 export default function Shop() {
   const [activeCat, setActiveCat] = useState<CategoryFilter>('All')
-  const filtered = filterProducts(activeCat)
+  const [sort, setSort] = useState<SortOption>('featured')
+  const filtered = catalogService.search(activeCat, '', sort)
 
   return (
     <>
@@ -35,26 +44,39 @@ export default function Shop() {
               {filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'}
             </p>
           </div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap gap-3 md:gap-4 font-label-caps text-label-caps"
-          >
-            {CATEGORIES.map((cat) => (
-              <motion.button
-                key={cat}
-                onClick={() => setActiveCat(cat)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`uppercase transition-colors ${
-                  activeCat === cat ? 'border-b border-primary pb-1 font-bold' : 'text-on-surface-variant hover:text-primary'
-                }`}
-              >
-                {cat}
-              </motion.button>
-            ))}
-          </motion.div>
+          <div className="flex flex-col gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-wrap gap-3 md:gap-4 font-label-caps text-label-caps"
+            >
+              {CATEGORIES.map((cat) => (
+                <motion.button
+                  key={cat}
+                  onClick={() => setActiveCat(cat)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`uppercase transition-colors ${
+                    activeCat === cat ? 'border-b border-primary pb-1 font-bold' : 'text-on-surface-variant hover:text-primary'
+                  }`}
+                >
+                  {cat}
+                </motion.button>
+              ))}
+            </motion.div>
+            <div className="flex gap-3 font-label-caps text-[10px] md:text-label-caps uppercase">
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSort(opt.value)}
+                  className={`transition-colors ${sort === opt.value ? 'text-primary font-bold' : 'text-secondary hover:text-primary'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </motion.div>
 
         {filtered.length === 0 ? (
