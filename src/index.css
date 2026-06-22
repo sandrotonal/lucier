@@ -89,28 +89,47 @@
 
 @media (width < 48rem) {
   :root {
-    --spacing-container-margin: 20px;
-    --spacing-gutter: 16px;
-    --spacing-section-gap: 60px;
-    --text-display-xl: 120px;
-    --text-display-xl--line-height: 100px;
-    --text-headline-lg: 28px;
-    --text-headline-lg--line-height: 36px;
-    --text-headline-md: 22px;
-    --text-headline-md--line-height: 28px;
+    --spacing-container-margin: 16px;
+    --spacing-gutter: 12px;
+    --spacing-section-gap: 48px;
+    --text-display-xl: 72px;
+    --text-display-xl--line-height: 64px;
+    --text-headline-lg: 24px;
+    --text-headline-lg--line-height: 32px;
+    --text-headline-md: 20px;
+    --text-headline-md--line-height: 26px;
+  }
+}
+
+@media (width < 24rem) {
+  :root {
+    --spacing-container-margin: 12px;
   }
 }
 
 body {
   background-color: #F7F4EF;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .hero-text-overlay {
-  font-size: clamp(60px, 20vw, 350px);
+  font-size: clamp(48px, 18vw, 350px);
   line-height: 0.8;
   letter-spacing: -0.06em;
 }
 
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Touch-friendly tap targets on mobile */
+@media (width < 48rem) {
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

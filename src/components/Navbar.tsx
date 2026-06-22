@@ -6,14 +6,18 @@ import { useStore } from '../store/StoreContext'
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { cart, setCartOpen } = useStore()
-  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0)
+  const { cartCount, setCartOpen, setSearchOpen } = useStore()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [menuOpen])
 
   return (
     <>
@@ -25,7 +29,7 @@ export default function Navbar() {
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="fixed top-0 left-0 right-0 w-full z-50 flex justify-between items-center px-container-margin h-16 md:h-20 backdrop-blur-md"
       >
-        <div className="flex gap-6 items-center">
+        <div className="flex gap-4 md:gap-6 items-center">
           <button
             onClick={() => setMenuOpen(true)}
             className={`${scrolled ? 'text-primary' : 'text-white drop-shadow-md'} hover:opacity-70 transition-opacity duration-200`}
@@ -33,29 +37,37 @@ export default function Navbar() {
           >
             <span className="material-symbols-outlined">menu</span>
           </button>
-        </div>
-        <div className="relative w-full max-w-sm hidden md:block">
-          <input
-            className={`w-full rounded-full px-4 py-2 font-label-caps text-label-caps focus:outline-none transition-colors duration-300 ${
-              scrolled
-                ? 'bg-transparent border border-primary/30 text-primary placeholder:text-primary/40 focus:border-primary'
-                : 'bg-white/15 backdrop-blur-sm border border-white/50 text-white placeholder:text-white/70 focus:border-white'
-            }`}
-            placeholder="Search"
-            type="text"
-          />
           <button
-            onClick={() => {/* search */}}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 flex items-center justify-center transition-colors duration-300 rounded-full ${
-              scrolled ? 'bg-primary text-on-primary' : 'bg-white/30 text-white hover:bg-white/50'
-            }`}
+            onClick={() => setSearchOpen(true)}
+            className={`md:hidden ${scrolled ? 'text-primary' : 'text-white drop-shadow-md'} hover:opacity-70 transition-opacity`}
             aria-label="Search"
           >
-            <span className="material-symbols-outlined text-[16px]">search</span>
+            <span className="material-symbols-outlined">search</span>
           </button>
         </div>
-        <div className={`flex gap-4 items-center ${scrolled ? 'text-primary' : 'text-white drop-shadow-md'}`}>
-          <Link to="/wishlist" className="hover:opacity-70 transition-opacity duration-200 hidden md:block" aria-label="Wishlist">
+
+        <div className="relative w-full max-w-sm hidden md:block">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className={`w-full rounded-full px-4 py-2 font-label-caps text-label-caps text-left transition-colors duration-300 ${
+              scrolled
+                ? 'bg-transparent border border-primary/30 text-primary/60 hover:border-primary'
+                : 'bg-white/15 backdrop-blur-sm border border-white/50 text-white/70 hover:border-white'
+            }`}
+          >
+            Search products...
+          </button>
+          <span
+            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 flex items-center justify-center rounded-full pointer-events-none ${
+              scrolled ? 'text-primary/40' : 'text-white/50'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">search</span>
+          </span>
+        </div>
+
+        <div className={`flex gap-3 md:gap-4 items-center ${scrolled ? 'text-primary' : 'text-white drop-shadow-md'}`}>
+          <Link to="/wishlist" className="hover:opacity-70 transition-opacity duration-200" aria-label="Wishlist">
             <span className="material-symbols-outlined">favorite</span>
           </Link>
           <button onClick={() => setCartOpen(true)} className="hover:opacity-70 transition-opacity duration-200 relative" aria-label="Bag">
@@ -77,32 +89,33 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
             onClick={() => setMenuOpen(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-surface p-8 md:p-12 w-[90vw] max-w-md border border-primary"
+              className="bg-surface h-full w-[85vw] max-w-sm border-r border-primary p-8 flex flex-col"
             >
               <button
                 onClick={() => setMenuOpen(false)}
-                className="absolute top-4 right-4 text-primary"
+                className="self-end text-primary mb-8"
                 aria-label="Close"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
-              <div className="flex flex-col gap-6 font-headline-md text-headline-md uppercase">
-                <Link to="/" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-2">Home</Link>
-                <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-2">Shop</Link>
-                <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-2">New Collection</Link>
-                <Link to="/wishlist" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-2">Wishlist</Link>
-                <a href="#" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-2">About</a>
-                <Link to="/bag" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity">Bag ({cartCount})</Link>
+              <div className="flex flex-col gap-6 font-headline-md text-[22px] md:text-headline-md uppercase flex-1">
+                <Link to="/" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Home</Link>
+                <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Shop</Link>
+                <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">New Collection</Link>
+                <Link to="/wishlist" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Wishlist</Link>
+                <button onClick={() => { setMenuOpen(false); setSearchOpen(true) }} className="text-left hover:opacity-70 transition-opacity border-b border-primary pb-3">Search</button>
+                <Link to="/bag" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity mt-auto">Bag ({cartCount})</Link>
               </div>
-            </motion.div>
+            </motion.aside>
           </motion.div>
         )}
       </AnimatePresence>
