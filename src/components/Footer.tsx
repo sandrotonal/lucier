@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { newsletterService } from '../services/newsletter'
+import TrustBadges from './TrustBadges'
 
 export default function Footer() {
   const [email, setEmail] = useState('')
@@ -74,6 +75,10 @@ export default function Footer() {
               Get early access to new collections and editorial content.
             </p>
           </div>
+        </div>
+
+        <div className="mt-10 md:mt-14 pt-8 border-t border-outline-variant">
+          <TrustBadges />
         </div>
 
         <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">

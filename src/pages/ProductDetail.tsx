@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import SizeGuide from '../components/SizeGuide'
+import ProductReviews from '../components/ProductReviews'
 import { getProductById } from '../data/products'
 import { catalogService } from '../services/catalog'
 import { useTrackProductView } from '../hooks/useRecentlyViewed'
@@ -253,6 +254,15 @@ export default function ProductDetail() {
             </div>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 md:mt-16"
+        >
+          <ProductReviews productId={product.id} />
+        </motion.div>
       </main>
 
       <motion.section

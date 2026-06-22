@@ -4,11 +4,13 @@ import { useState, type FormEvent } from 'react'
 import Navbar from '../components/Navbar'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
+import TrustBadges from '../components/TrustBadges'
 import { useStore } from '../store/StoreContext'
 import { catalogService } from '../services/catalog'
 import { orderService } from '../services/orders'
 import { paymentService, type PaymentMethod } from '../services/payment'
 import { iyzicoService } from '../services/iyzico'
+import { couponService, type Coupon } from '../services/coupon'
 import { fadeUpAnimate } from '../lib/animations'
 
 export default function Checkout() {
@@ -21,8 +23,36 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer')
   const [bankDetails, setBankDetails] = useState<ReturnType<typeof paymentService.getBankDetails> | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
+  const [couponError, setCouponError] = useState('')
 
   const paymentMethods = paymentService.getAvailableMethods()
+  
+  const discount = appliedCoupon ? couponService.calculateDiscount(appliedCoupon, cartTotal) : 0
+  const finalTotal = cartTotal - discount
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code')
+      return
+    }
+    const result = couponService.validate(couponCode.trim(), cartTotal)
+    if (result.valid && result.coupon) {
+      setAppliedCoupon(result.coupon)
+      setCouponError('')
+      showToast(result.message, 'success')
+    } else {
+      setCouponError(result.message)
+      setAppliedCoupon(null)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponCode('')
+    setCouponError('')
+  }
 
   const validate = () => {
     const next: Record<string, string> = {}
@@ -228,6 +258,8 @@ export default function Checkout() {
                 ))}
               </div>
             </section>
+
+            <TrustBadges variant="checkout" className="mt-6" />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-5">
@@ -248,10 +280,60 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
+              
+              <div className="mt-4 border-t border-primary pt-4">
+                <h3 className="font-label-caps text-label-caps uppercase mb-3">Coupon Code</h3>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-surface-container-low border border-primary p-3">
+                    <div className="flex-1">
+                      <p className="font-label-caps text-label-caps uppercase">{appliedCoupon.code}</p>
+                      <p className="font-body-md text-[11px] text-secondary">
+                        {appliedCoupon.type === 'percentage' ? `${appliedCoupon.discount}% off` : `$${appliedCoupon.discount} off`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-secondary hover:text-primary transition-colors"
+                      aria-label="Remove coupon"
+                    >
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter code"
+                        className="flex-1 bg-transparent border border-primary/50 px-3 py-2 font-label-caps text-[11px] uppercase focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        className="border border-primary px-4 py-2 font-label-caps text-[10px] uppercase hover:bg-primary hover:text-on-primary transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-error font-label-caps text-[10px] uppercase">{couponError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="mt-6 space-y-3 font-label-caps text-label-caps uppercase border-t border-primary pt-4">
                 <div className="flex justify-between"><span>Subtotal</span><span>{catalogService.formatPrice(cartTotal)}</span></div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-primary">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span>-{catalogService.formatPrice(discount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-secondary"><span>Shipping</span><span>Free</span></div>
-                <div className="flex justify-between font-headline-md text-[18px] pt-2 border-t border-primary"><span>Total</span><span>{catalogService.formatPrice(cartTotal)}</span></div>
+                <div className="flex justify-between font-headline-md text-[18px] pt-2 border-t border-primary"><span>Total</span><span>{catalogService.formatPrice(finalTotal)}</span></div>
               </div>
               <motion.button
                 type="submit"

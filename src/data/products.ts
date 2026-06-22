@@ -1,4 +1,5 @@
 export type ProductCategory = 'Jackets' | 'Accessories' | 'Shoes' | 'Tops'
+export type ProductColor = 'Black' | 'White' | 'Gray' | 'Beige' | 'Brown' | 'Blue' | 'Green' | 'Red'
 
 export interface Product {
   id: number
@@ -18,6 +19,9 @@ export interface Product {
   sizes?: string[]
   unavailableSizes?: string[]
   stock: number
+  colors?: ProductColor[]
+  isNew?: boolean
+  discount?: number
 }
 
 export const CATEGORIES = ['All', 'Jackets', 'Accessories', 'Shoes', 'Tops'] as const
@@ -38,6 +42,8 @@ export const products: Product[] = [
     col: 'md:col-span-8',
     featured: true,
     stock: 8,
+    colors: ['Black', 'Brown'],
+    isNew: true,
   },
   {
     id: 2,
@@ -60,6 +66,8 @@ export const products: Product[] = [
     sizes: ['S', 'M', 'L', 'XL'],
     unavailableSizes: ['XL'],
     stock: 12,
+    colors: ['Black', 'Gray'],
+    isNew: true,
   },
   {
     id: 3,
@@ -75,6 +83,7 @@ export const products: Product[] = [
     col: 'md:col-span-4',
     featured: true,
     stock: 15,
+    colors: ['Black'],
   },
   {
     id: 4,
@@ -92,6 +101,7 @@ export const products: Product[] = [
     featured: true,
     sizes: ['XS', 'S', 'M', 'L'],
     stock: 20,
+    colors: ['White', 'Beige'],
   },
   {
     id: 5,
@@ -106,6 +116,7 @@ export const products: Product[] = [
     aspect: 'aspect-square',
     sizes: ['40', '41', '42', '43', '44'],
     stock: 6,
+    colors: ['Gray', 'White'],
   },
 ]
 
