@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useStore } from '../store/StoreContext'
+import { newsletterService } from '../services/newsletter'
+import TrustBadges from './TrustBadges'
 
 export default function Footer() {
   const [email, setEmail] = useState('')
@@ -9,10 +11,13 @@ export default function Footer() {
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      showToast('Subscribed to newsletter!', 'success')
-      setEmail('')
+    const result = newsletterService.subscribe(email)
+    if (result.ok === false) {
+      showToast(result.reason, result.reason === 'Already subscribed' ? 'info' : 'error')
+      return
     }
+    showToast('Subscribed to newsletter!', 'success')
+    setEmail('')
   }
 
   return (
@@ -32,16 +37,17 @@ export default function Footer() {
               <Link to="/shop" className="hover:text-primary transition-colors">Shop</Link>
               <Link to="/wishlist" className="hover:text-primary transition-colors">Wishlist</Link>
               <Link to="/bag" className="hover:text-primary transition-colors">Bag</Link>
+              <Link to="/orders" className="hover:text-primary transition-colors">Orders</Link>
             </div>
           </div>
 
           <div className="md:col-span-3">
             <h4 className="font-label-caps text-label-caps uppercase tracking-widest mb-4 text-primary">Support</h4>
             <div className="flex flex-col gap-2 font-label-caps text-label-caps text-secondary uppercase">
-              <a href="#" className="hover:text-primary transition-colors">Shipping & Returns</a>
-              <a href="#" className="hover:text-primary transition-colors">Size Guide</a>
-              <a href="#" className="hover:text-primary transition-colors">Contact</a>
-              <a href="#" className="hover:text-primary transition-colors">FAQ</a>
+              <Link to="/info/shipping" className="hover:text-primary transition-colors">Shipping & Returns</Link>
+              <Link to="/info/size-guide" className="hover:text-primary transition-colors">Size Guide</Link>
+              <Link to="/info/contact" className="hover:text-primary transition-colors">Contact</Link>
+              <Link to="/info/faq" className="hover:text-primary transition-colors">FAQ</Link>
             </div>
           </div>
 
@@ -71,11 +77,15 @@ export default function Footer() {
           </div>
         </div>
 
+        <div className="mt-10 md:mt-14 pt-8 border-t border-outline-variant">
+          <TrustBadges />
+        </div>
+
         <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-wrap justify-center gap-4 md:gap-6 font-label-caps text-label-caps text-secondary uppercase text-[10px] md:text-label-caps">
-            <a className="hover:text-primary transition-colors" href="#">Privacy Policy</a>
-            <a className="hover:text-primary transition-colors" href="#">Terms of Service</a>
-            <a className="hover:text-primary transition-colors" href="#">Sustainability</a>
+            <Link to="/info/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link to="/info/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+            <Link to="/info/sustainability" className="hover:text-primary transition-colors">Sustainability</Link>
           </div>
           <p className="font-label-caps text-label-caps text-secondary text-[10px] md:text-label-caps uppercase tracking-wider">
             &copy; 2024 LUCIR ARCHITECTURAL FASHION. ALL RIGHTS RESERVED.

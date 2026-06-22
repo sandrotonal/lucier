@@ -6,11 +6,14 @@ import HeroNav from '../components/HeroNav'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import { useStore } from '../store/StoreContext'
-import { featuredProducts } from '../data/products'
+import { catalogService } from '../services/catalog'
+import { useRecentlyViewedIds } from '../hooks/useRecentlyViewed'
 import { fadeUp, fadeIn, stagger, scaleIn, clipReveal } from '../lib/animations'
 
 export default function Home() {
   const heroRef = useRef(null)
+  const recentIds = useRecentlyViewedIds().filter((id) => !catalogService.getFeatured().some((p) => p.id === id))
+  const recentlyViewed = recentIds.map((id) => catalogService.getById(id)).filter(Boolean)
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
@@ -66,7 +69,7 @@ export default function Home() {
         </div>
 
         <motion.div {...stagger} className="grid grid-cols-2 md:grid-cols-12 gap-4 md:gap-x-6 md:gap-y-12 items-start">
-          {featuredProducts.map((p, i) => (
+          {catalogService.getFeatured().map((p, i) => (
             <motion.article
               key={p.id}
               variants={{
@@ -132,6 +135,25 @@ export default function Home() {
           </motion.div>
         </motion.div>
       </motion.section>
+
+      {recentlyViewed.length > 0 && (
+        <motion.section {...fadeUp} className="px-container-margin pb-section-gap w-full max-w-[1600px] mx-auto">
+          <h2 className="font-headline-lg text-headline-lg uppercase tracking-tight mb-6 md:mb-10">Recently Viewed</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-gutter">
+            {recentlyViewed.map((p) => p && (
+              <Link key={p.id} to={p.slug} className="group block">
+                <div className="aspect-[3/4] bg-surface-container overflow-hidden border border-primary/30 mb-2">
+                  <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                </div>
+                <div className="flex justify-between font-label-caps text-[10px] md:text-label-caps uppercase">
+                  <span>{p.shortName}</span>
+                  <span>{p.priceLabel}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </motion.section>
+      )}
 
       <motion.section {...fadeIn} className="px-container-margin pb-section-gap w-full max-w-[1600px] mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-4 md:gap-8 md:h-[800px]">

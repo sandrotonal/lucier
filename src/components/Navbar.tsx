@@ -113,6 +113,8 @@ export default function Navbar() {
                 <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">New Collection</Link>
                 <Link to="/wishlist" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Wishlist</Link>
                 <button onClick={() => { setMenuOpen(false); setSearchOpen(true) }} className="text-left hover:opacity-70 transition-opacity border-b border-primary pb-3">Search</button>
+                <Link to="/orders" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Orders</Link>
+                <Link to="/info/about" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">About</Link>
                 <Link to="/bag" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity mt-auto">Bag ({cartCount})</Link>
               </div>
             </motion.aside>

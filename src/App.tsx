@@ -7,10 +7,19 @@ import Bag from './pages/Bag'
 import ProductDetail from './pages/ProductDetail'
 import Checkout from './pages/Checkout'
 import Wishlist from './pages/Wishlist'
+import InfoPage from './pages/InfoPage'
+import Orders from './pages/Orders'
+import PaymentResult from './pages/PaymentResult'
 import { StoreProvider } from './store/StoreContext'
 import Toast from './components/Toast'
 import CartDrawer from './components/CartDrawer'
 import SearchOverlay from './components/SearchOverlay'
+import { useBackendInit } from './hooks/useBackendInit'
+
+function BackendInit() {
+  useBackendInit()
+  return null
+}
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -33,6 +42,9 @@ function AnimatedRoutes() {
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/payment/result" element={<PaymentResult />} />
+            <Route path="/info/:slug" element={<InfoPage />} />
           </Route>
         </Routes>
       </motion.div>
@@ -43,6 +55,7 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <StoreProvider>
+      <BackendInit />
       <AnimatedRoutes />
       <Toast />
       <CartDrawer />

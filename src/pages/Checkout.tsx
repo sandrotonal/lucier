@@ -4,8 +4,13 @@ import { useState, type FormEvent } from 'react'
 import Navbar from '../components/Navbar'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
+import TrustBadges from '../components/TrustBadges'
 import { useStore } from '../store/StoreContext'
-import { formatPrice } from '../data/products'
+import { catalogService } from '../services/catalog'
+import { orderService } from '../services/orders'
+import { paymentService, type PaymentMethod } from '../services/payment'
+import { iyzicoService } from '../services/iyzico'
+import { couponService, type Coupon } from '../services/coupon'
 import { fadeUpAnimate } from '../lib/animations'
 
 export default function Checkout() {
@@ -14,12 +19,46 @@ export default function Checkout() {
     firstName: '', lastName: '', email: '', address: '', city: '', postalCode: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [orderId, setOrderId] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer')
+  const [bankDetails, setBankDetails] = useState<ReturnType<typeof paymentService.getBankDetails> | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
+  const [couponError, setCouponError] = useState('')
+
+  const paymentMethods = paymentService.getAvailableMethods()
+  
+  const discount = appliedCoupon ? couponService.calculateDiscount(appliedCoupon, cartTotal) : 0
+  const finalTotal = cartTotal - discount
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code')
+      return
+    }
+    const result = couponService.validate(couponCode.trim(), cartTotal)
+    if (result.valid && result.coupon) {
+      setAppliedCoupon(result.coupon)
+      setCouponError('')
+      showToast(result.message, 'success')
+    } else {
+      setCouponError(result.message)
+      setAppliedCoupon(null)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponCode('')
+    setCouponError('')
+  }
 
   const validate = () => {
     const next: Record<string, string> = {}
     if (!form.firstName.trim()) next.firstName = 'Required'
     if (!form.lastName.trim()) next.lastName = 'Required'
-    if (!form.email.includes('@')) next.email = 'Valid email required'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = 'Valid email required'
     if (!form.address.trim()) next.address = 'Required'
     if (!form.city.trim()) next.city = 'Required'
     if (!form.postalCode.trim()) next.postalCode = 'Required'
@@ -27,14 +66,56 @@ export default function Checkout() {
     return Object.keys(next).length === 0
   }
 
-  const handlePlaceOrder = (e: FormEvent) => {
+  const handlePlaceOrder = async (e: FormEvent) => {
     e.preventDefault()
     if (!validate()) {
       showToast('Please fill in all required fields', 'error')
       return
     }
-    setOrderPlaced(true)
-    clearCart()
+
+    setSubmitting(true)
+    try {
+      const shipping = {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim().toLowerCase(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        postalCode: form.postalCode.trim(),
+      }
+
+      const order = await orderService.placeOrder(cart, shipping, paymentMethod)
+
+      if (paymentMethod === 'iyzico') {
+        const { paymentPageUrl } = await iyzicoService.initialize({
+          orderId: order.id,
+          amountUsd: order.subtotal,
+          shipping,
+          items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+        })
+        clearCart()
+        window.location.href = paymentPageUrl
+        return
+      }
+
+      setOrderId(order.id)
+
+      if (paymentMethod === 'bank_transfer') {
+        setBankDetails(paymentService.getBankDetails())
+      }
+
+      if (paymentService.isExternalPayment(paymentMethod)) {
+        const url = paymentService.getExternalCheckoutUrl(paymentMethod, order.id, order.subtotal)
+        if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      }
+
+      clearCart()
+      setOrderPlaced(true)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Order failed', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (orderPlaced) {
@@ -45,15 +126,35 @@ export default function Checkout() {
           <motion.div {...fadeUpAnimate} className="flex flex-col items-center text-center gap-6 mt-24 md:mt-32">
             <span className="material-symbols-outlined text-6xl text-primary">check_circle</span>
             <h1 className="font-headline-lg text-[28px] md:text-headline-lg uppercase tracking-tighter">Order Confirmed</h1>
+            {orderId && (
+              <p className="font-label-caps text-label-caps uppercase tracking-widest border border-primary px-4 py-2">
+                {orderId}
+              </p>
+            )}
             <p className="font-body-md text-body-md text-secondary max-w-md">
-              Thank you for shopping with Lucir. A confirmation email will be sent to {form.email || 'your inbox'}.
+              Confirmation details sent to {form.email}.
             </p>
+
+            {bankDetails && (
+              <div className="w-full border border-primary p-5 md:p-6 text-left mt-2">
+                <h2 className="font-headline-md text-[18px] uppercase tracking-tighter mb-4">Havale / EFT Bilgileri</h2>
+                <div className="space-y-2 font-label-caps text-label-caps uppercase text-[11px] md:text-label-caps">
+                  <p><span className="text-secondary">Hesap:</span> {bankDetails.holder}</p>
+                  <p><span className="text-secondary">Banka:</span> {bankDetails.bank}</p>
+                  <p className="break-all"><span className="text-secondary">IBAN:</span> {bankDetails.iban}</p>
+                  <p className="text-secondary mt-4 normal-case font-body-md text-body-md">
+                    Açıklama kısmına sipariş numaranızı ({orderId}) yazın. Ödeme onaylandıktan sonra kargoya verilir.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <Link to="/shop" onClick={() => setOrderPlaced(false)} className="border border-primary px-8 py-3 font-label-caps text-label-caps uppercase hover:bg-primary hover:text-surface transition-colors">
-                Continue Shopping
+              <Link to="/orders" onClick={() => setOrderPlaced(false)} className="border border-primary px-8 py-3 font-label-caps text-label-caps uppercase hover:bg-primary hover:text-surface transition-colors">
+                View Orders
               </Link>
-              <Link to="/" onClick={() => setOrderPlaced(false)} className="font-label-caps text-label-caps underline hover:text-primary transition-colors py-3">
-                Back to Home
+              <Link to="/shop" onClick={() => setOrderPlaced(false)} className="font-label-caps text-label-caps underline hover:text-primary transition-colors py-3">
+                Continue Shopping
               </Link>
             </div>
           </motion.div>
@@ -102,46 +203,63 @@ export default function Checkout() {
         </motion.div>
 
         <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-gutter">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-7">
-            <h2 className="font-headline-md text-[20px] uppercase tracking-tighter mb-6 border-b border-primary pb-4">Shipping Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {[
-                { key: 'firstName', label: 'First Name', w: 'md:col-span-1' },
-                { key: 'lastName', label: 'Last Name', w: 'md:col-span-1' },
-                { key: 'email', label: 'Email', w: 'md:col-span-2', type: 'email' },
-                { key: 'address', label: 'Address', w: 'md:col-span-2' },
-                { key: 'city', label: 'City', w: 'md:col-span-1' },
-                { key: 'postalCode', label: 'Postal Code', w: 'md:col-span-1' },
-              ].map((f) => (
-                <div key={f.key} className={f.w}>
-                  <label className="font-label-caps text-label-caps uppercase mb-1 block">{f.label}</label>
-                  <input
-                    type={f.type ?? 'text'}
-                    value={form[f.key as keyof typeof form]}
-                    onChange={(e) => update(f.key, e.target.value)}
-                    placeholder={f.label}
-                    className={`w-full bg-transparent border px-4 py-3 font-body-md text-body-md focus:outline-none transition-colors ${
-                      errors[f.key] ? 'border-error' : 'border-primary/50 focus:border-primary'
-                    }`}
-                  />
-                  {errors[f.key] && <p className="text-error font-label-caps text-[10px] mt-1 uppercase">{errors[f.key]}</p>}
-                </div>
-              ))}
-            </div>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-7 space-y-10">
+            <section>
+              <h2 className="font-headline-md text-[20px] uppercase tracking-tighter mb-6 border-b border-primary pb-4">Shipping Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {[
+                  { key: 'firstName', label: 'First Name', w: 'md:col-span-1' },
+                  { key: 'lastName', label: 'Last Name', w: 'md:col-span-1' },
+                  { key: 'email', label: 'Email', w: 'md:col-span-2', type: 'email' },
+                  { key: 'address', label: 'Address', w: 'md:col-span-2' },
+                  { key: 'city', label: 'City', w: 'md:col-span-1' },
+                  { key: 'postalCode', label: 'Postal Code', w: 'md:col-span-1' },
+                ].map((f) => (
+                  <div key={f.key} className={f.w}>
+                    <label className="font-label-caps text-label-caps uppercase mb-1 block">{f.label}</label>
+                    <input
+                      type={f.type ?? 'text'}
+                      value={form[f.key as keyof typeof form]}
+                      onChange={(e) => update(f.key, e.target.value)}
+                      placeholder={f.label}
+                      className={`w-full bg-transparent border px-4 py-3 font-body-md text-body-md focus:outline-none transition-colors ${
+                        errors[f.key] ? 'border-error' : 'border-primary/50 focus:border-primary'
+                      }`}
+                    />
+                    {errors[f.key] && <p className="text-error font-label-caps text-[10px] mt-1 uppercase">{errors[f.key]}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            <h2 className="font-headline-md text-[20px] uppercase tracking-tighter mt-10 mb-6 border-b border-primary pb-4">Payment</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['Card Number', 'Expiry', 'CVC'].map((f) => (
-                <div key={f} className={f === 'Card Number' ? 'md:col-span-3' : ''}>
-                  <label className="font-label-caps text-label-caps uppercase mb-1 block">{f}</label>
-                  <input
-                    type="text"
-                    placeholder={f}
-                    className="w-full bg-transparent border border-primary/50 px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-              ))}
-            </div>
+            <section>
+              <h2 className="font-headline-md text-[20px] uppercase tracking-tighter mb-6 border-b border-primary pb-4">Payment Method</h2>
+              <div className="space-y-3">
+                {paymentMethods.map((m) => (
+                  <label
+                    key={m.method}
+                    className={`flex items-start gap-4 border p-4 cursor-pointer transition-colors ${
+                      paymentMethod === m.method ? 'border-primary bg-surface-container-low' : 'border-primary/30 hover:border-primary/60'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={m.method}
+                      checked={paymentMethod === m.method}
+                      onChange={() => setPaymentMethod(m.method)}
+                      className="mt-1 accent-black"
+                    />
+                    <div>
+                      <p className="font-label-caps text-label-caps uppercase tracking-widest">{m.label}</p>
+                      <p className="font-body-md text-body-md text-secondary mt-1">{m.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <TrustBadges variant="checkout" className="mt-6" />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-5">
@@ -157,29 +275,76 @@ export default function Checkout() {
                       <p className="font-label-caps text-label-caps uppercase truncate">{item.name}</p>
                       {item.size && <p className="font-label-caps text-[10px] text-secondary uppercase">Size: {item.size}</p>}
                       <p className="font-body-md text-body-md text-secondary">Qty: {item.qty}</p>
-                      <p className="font-body-md text-body-md">{formatPrice(item.price * item.qty)}</p>
+                      <p className="font-body-md text-body-md">{catalogService.formatPrice(item.price * item.qty)}</p>
                     </div>
                   </div>
                 ))}
               </div>
+              
+              <div className="mt-4 border-t border-primary pt-4">
+                <h3 className="font-label-caps text-label-caps uppercase mb-3">Coupon Code</h3>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-surface-container-low border border-primary p-3">
+                    <div className="flex-1">
+                      <p className="font-label-caps text-label-caps uppercase">{appliedCoupon.code}</p>
+                      <p className="font-body-md text-[11px] text-secondary">
+                        {appliedCoupon.type === 'percentage' ? `${appliedCoupon.discount}% off` : `$${appliedCoupon.discount} off`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-secondary hover:text-primary transition-colors"
+                      aria-label="Remove coupon"
+                    >
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter code"
+                        className="flex-1 bg-transparent border border-primary/50 px-3 py-2 font-label-caps text-[11px] uppercase focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        className="border border-primary px-4 py-2 font-label-caps text-[10px] uppercase hover:bg-primary hover:text-on-primary transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-error font-label-caps text-[10px] uppercase">{couponError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="mt-6 space-y-3 font-label-caps text-label-caps uppercase border-t border-primary pt-4">
-                <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(cartTotal)}</span></div>
+                <div className="flex justify-between"><span>Subtotal</span><span>{catalogService.formatPrice(cartTotal)}</span></div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-primary">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span>-{catalogService.formatPrice(discount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-secondary"><span>Shipping</span><span>Free</span></div>
-                <div className="flex justify-between font-headline-md text-[18px] pt-2 border-t border-primary"><span>Total</span><span>{formatPrice(cartTotal)}</span></div>
+                <div className="flex justify-between font-headline-md text-[18px] pt-2 border-t border-primary"><span>Total</span><span>{catalogService.formatPrice(finalTotal)}</span></div>
               </div>
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="w-full mt-6 border border-primary bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 transition-all duration-300 flex items-center justify-between px-6 group"
+                disabled={submitting}
+                whileHover={{ scale: submitting ? 1 : 1.01 }}
+                whileTap={{ scale: submitting ? 1 : 0.99 }}
+                className="w-full mt-6 border border-primary bg-primary text-on-primary py-4 font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 transition-all duration-300 flex items-center justify-between px-6 group disabled:opacity-50"
               >
-                <span>PLACE ORDER</span>
+                <span>{submitting ? 'Processing...' : 'PLACE ORDER'}</span>
                 <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
               </motion.button>
-              <div className="mt-4 flex items-center gap-2 justify-center text-secondary font-label-caps text-label-caps uppercase">
-                <span className="material-symbols-outlined text-sm">lock</span>
-                <span>Secure checkout</span>
-              </div>
             </div>
           </motion.div>
         </form>

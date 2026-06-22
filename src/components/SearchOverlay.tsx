@@ -2,14 +2,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/StoreContext'
-import { filterProducts } from '../data/products'
+import { catalogService } from '../services/catalog'
 
 export default function SearchOverlay() {
   const { searchOpen, setSearchOpen } = useStore()
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const results = filterProducts('All', query).slice(0, 6)
+  const results = catalogService.search('All', query).slice(0, 6)
 
   useEffect(() => {
     if (searchOpen) {
