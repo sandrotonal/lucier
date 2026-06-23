@@ -8,11 +8,14 @@ import SizeGuide from '../components/SizeGuide'
 import ProductReviews from '../components/ProductReviews'
 import CustomersAlsoBought from '../components/CustomersAlsoBought'
 import SEOHead from '../components/SEOHead'
+import LiveViewers from '../components/LiveViewers'
+import StickyBottomCTA from '../components/StickyBottomCTA'
 import { getProductById } from '../data/products'
 import { catalogService } from '../services/catalog'
 import { useTrackProductView } from '../hooks/useRecentlyViewed'
 import { useStore } from '../store/StoreContext'
 import { seoService } from '../services/seo'
+import { useStockUrgency } from '../hooks/useStockUrgency'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -36,6 +39,7 @@ export default function ProductDetail() {
   const currentSize = selectedSize || sizes.find((s) => !unavailable.has(s)) || ''
   const liked = isInWishlist(product.id)
   const related = catalogService.getRelated(product.id)
+  const stockUrgency = useStockUrgency(product.stock)
 
   const structuredData = seoService.generateStructuredData('product', {
     name: product.name,
