@@ -58,10 +58,10 @@ export default function Navbar() {
           </button>
         </div>
 
-        <div className="relative w-full max-w-sm hidden md:block">
+        <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md hidden md:block px-4">
           <button
             onClick={() => setSearchOpen(true)}
-            className={`w-full rounded-full px-4 py-2 font-label-caps text-label-caps text-left transition-colors duration-300 ${
+            className={`w-full rounded-full px-4 py-2 font-label-caps text-[11px] text-left transition-colors duration-300 ${
               scrolled
                 ? 'bg-transparent border border-primary/30 text-primary/60 hover:border-primary'
                 : 'bg-white/15 backdrop-blur-sm border border-white/50 text-white/70 hover:border-white'
@@ -70,7 +70,7 @@ export default function Navbar() {
             Search products...
           </button>
           <span
-            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 flex items-center justify-center rounded-full pointer-events-none ${
+            className={`absolute right-7 top-1/2 -translate-y-1/2 p-1 flex items-center justify-center rounded-full pointer-events-none ${
               scrolled ? 'text-primary/40' : 'text-white/50'
             }`}
           >
