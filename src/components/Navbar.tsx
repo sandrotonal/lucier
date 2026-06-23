@@ -2,10 +2,14 @@ import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store/StoreContext'
+import AuthModal from './AuthModal'
+import { authService } from '../services/auth'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [user, setUser] = useState(authService.getCurrentUser())
   const { cartCount, setCartOpen, setSearchOpen } = useStore()
 
   useEffect(() => {
@@ -19,8 +23,16 @@ export default function Navbar() {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
+  const handleSignOut = async () => {
+    await authService.signOut()
+    setUser(null)
+    setMenuOpen(false)
+    window.location.href = '/'
+  }
+
   return (
     <>
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       <motion.nav
         animate={{
           backgroundColor: scrolled ? 'rgba(249, 249, 249, 0.95)' : 'rgba(0, 0, 0, 0)',
@@ -67,6 +79,25 @@ export default function Navbar() {
         </div>
 
         <div className={`flex gap-3 md:gap-4 items-center ${scrolled ? 'text-primary' : 'text-white drop-shadow-md'}`}>
+          {user ? (
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="hover:opacity-70 transition-opacity duration-200 flex items-center gap-2"
+              aria-label="Account"
+            >
+              <span className="material-symbols-outlined">account_circle</span>
+              <span className="hidden md:inline font-label-caps text-[11px] uppercase">
+                {user.firstName || 'Account'}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="hover:opacity-70 transition-opacity duration-200 font-label-caps text-[11px] uppercase hidden md:block"
+            >
+              Sign In
+            </button>
+          )}
           <Link to="/wishlist" className="hover:opacity-70 transition-opacity duration-200" aria-label="Wishlist">
             <span className="material-symbols-outlined">favorite</span>
           </Link>
@@ -108,6 +139,12 @@ export default function Navbar() {
                 <span className="material-symbols-outlined">close</span>
               </button>
               <div className="flex flex-col gap-6 font-headline-md text-[22px] md:text-headline-md uppercase flex-1">
+                {user && (
+                  <div className="border-b border-primary pb-4 mb-2">
+                    <p className="font-label-caps text-label-caps text-secondary uppercase mb-2">Account</p>
+                    <p className="font-body-md text-body-md">{user.email}</p>
+                  </div>
+                )}
                 <Link to="/" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Home</Link>
                 <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Shop</Link>
                 <Link to="/shop" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">New Collection</Link>
@@ -115,6 +152,15 @@ export default function Navbar() {
                 <button onClick={() => { setMenuOpen(false); setSearchOpen(true) }} className="text-left hover:opacity-70 transition-opacity border-b border-primary pb-3">Search</button>
                 <Link to="/orders" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">Orders</Link>
                 <Link to="/info/about" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity border-b border-primary pb-3">About</Link>
+                {user ? (
+                  <button onClick={handleSignOut} className="text-left hover:opacity-70 transition-opacity border-b border-primary pb-3 text-secondary">
+                    Sign Out
+                  </button>
+                ) : (
+                  <button onClick={() => { setMenuOpen(false); setAuthModalOpen(true) }} className="text-left hover:opacity-70 transition-opacity border-b border-primary pb-3">
+                    Sign In
+                  </button>
+                )}
                 <Link to="/bag" onClick={() => setMenuOpen(false)} className="hover:opacity-70 transition-opacity mt-auto">Bag ({cartCount})</Link>
               </div>
             </motion.aside>

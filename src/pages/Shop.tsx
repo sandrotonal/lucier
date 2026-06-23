@@ -6,6 +6,7 @@ import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 import FilterSidebar from '../components/FilterSidebar'
+import SEOHead from '../components/SEOHead'
 import { CATEGORIES, type CategoryFilter, type ProductColor } from '../data/products'
 import { catalogService, type SortOption } from '../services/catalog'
 
@@ -74,6 +75,7 @@ export default function Shop() {
 
   return (
     <>
+      <SEOHead page="shop" />
       <Navbar />
       <FilterSidebar
         open={filterOpen}

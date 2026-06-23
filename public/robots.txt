@@ -1,0 +1,36 @@
+# Robots.txt for LUCIR - Architectural Fashion
+# Updated: 2024-12-23
+
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /bag
+Disallow: /wishlist
+Disallow: /orders
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://lucir.vercel.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Crawl-delay: 10

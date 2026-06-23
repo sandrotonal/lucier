@@ -5,10 +5,12 @@ import Navbar from '../components/Navbar'
 import HeroNav from '../components/HeroNav'
 import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
+import SEOHead from '../components/SEOHead'
 import { useStore } from '../store/StoreContext'
 import { catalogService } from '../services/catalog'
 import { useRecentlyViewedIds } from '../hooks/useRecentlyViewed'
 import { fadeUp, fadeIn, stagger, scaleIn, clipReveal } from '../lib/animations'
+import { seoService } from '../services/seo'
 
 export default function Home() {
   const heroRef = useRef(null)
@@ -22,8 +24,11 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
   const { toggleWishlist, isInWishlist } = useStore()
 
+  const structuredData = seoService.generateStructuredData('website')
+
   return (
     <>
+      <SEOHead page="home" structuredData={structuredData} />
       <Navbar />
 
       <section ref={heroRef} className="relative w-full h-dvh overflow-hidden bg-primary flex flex-col justify-end">

@@ -6,10 +6,13 @@ import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import SizeGuide from '../components/SizeGuide'
 import ProductReviews from '../components/ProductReviews'
+import CustomersAlsoBought from '../components/CustomersAlsoBought'
+import SEOHead from '../components/SEOHead'
 import { getProductById } from '../data/products'
 import { catalogService } from '../services/catalog'
 import { useTrackProductView } from '../hooks/useRecentlyViewed'
 import { useStore } from '../store/StoreContext'
+import { seoService } from '../services/seo'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -34,6 +37,15 @@ export default function ProductDetail() {
   const liked = isInWishlist(product.id)
   const related = catalogService.getRelated(product.id)
 
+  const structuredData = seoService.generateStructuredData('product', {
+    name: product.name,
+    desc: product.desc,
+    img: product.img,
+    slug: product.slug,
+    price: product.price,
+    stock: product.stock,
+  })
+
   const handleAddToBag = () => {
     if (product.stock === 0) {
       showToast('This item is out of stock', 'error')
@@ -55,6 +67,18 @@ export default function ProductDetail() {
 
   return (
     <>
+      <SEOHead 
+        page="product" 
+        data={{
+          name: product.name,
+          desc: product.desc,
+          img: product.img,
+          slug: product.slug,
+          price: product.price,
+          category: product.category,
+        }}
+        structuredData={structuredData}
+      />
       <Navbar />
 
       <AnimatePresence>
@@ -262,6 +286,15 @@ export default function ProductDetail() {
           className="mt-12 md:mt-16"
         >
           <ProductReviews productId={product.id} />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 md:mt-16"
+        >
+          <CustomersAlsoBought productId={product.id} />
         </motion.div>
       </main>
 
